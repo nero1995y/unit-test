@@ -1,0 +1,25 @@
+import * as httpMocks from 'node-mocks-http';
+import {validate} from '../validator.js';
+import faker from "faker";
+import * as validator from 'express-validator';
+
+jest.mock('express-validator');
+
+describe('Validator Middleware', () => {
+  it('calls next if there are no validation errors', () => {
+    const request = httpMocks.createRequest({
+      method: 'GET',
+      url: '/tweets',
+    });
+    const response = httpMocks.createResponse();
+    const next = jest.fn();
+    validator.validationResult = jest.fn(() => ({isEmpty: () => true}))
+
+
+    validate(request, response, next);
+  });
+
+  it('returns 400 if there are validation errors', () => {
+
+  });
+});

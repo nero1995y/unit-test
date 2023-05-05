@@ -3,12 +3,13 @@ import {isAuth} from "../auth.js";
 import faker from 'faker';
 import jwt from 'jsonwebtoken';
 import * as userRepository from '../../data/auth.js';
+import {ne} from "faker/lib/locales.js";
 
 jest.mock('jsonwebtoken');
 jest.mock('../../data/auth.js');
 
 describe('Auth Middleware', () => {
-  it('returns 401 for the request without Authorization header',  async () => {
+  it('returns 401 for the request without Authorization header', async () => {
     const request = httpMocks.createRequest({
       method: 'GET',
       url: '/tweets',
@@ -27,7 +28,7 @@ describe('Auth Middleware', () => {
     const request = httpMocks.createRequest({
       method: 'GET',
       url: '/tweets',
-      headers: { Authorization: 'Basic'},
+      headers: {Authorization: 'Basic'},
     });
     const response = httpMocks.createResponse();
     const next = jest.fn();
@@ -44,7 +45,7 @@ describe('Auth Middleware', () => {
     const request = httpMocks.createRequest({
       method: 'GET',
       url: '/tweets',
-      headers: { Authorization: `Bearer ${token}`},
+      headers: {Authorization: `Bearer ${token}`},
     });
     const response = httpMocks.createResponse();
     const next = jest.fn();
@@ -65,7 +66,7 @@ describe('Auth Middleware', () => {
     const request = httpMocks.createRequest({
       method: 'GET',
       url: '/tweets',
-      headers: { Authorization: `Bearer ${token}`},
+      headers: {Authorization: `Bearer ${token}`},
     });
     const response = httpMocks.createResponse();
     const next = jest.fn();
@@ -83,4 +84,24 @@ describe('Auth Middleware', () => {
     expect(next).not.toBeCalled();
   });
 
+  it('passes a request with vaild Authorization header with token', async () => {
+    const token = faker.random.alphaNumeric(128);
+    const userId = faker.random.alphaNumeric(32);
+    const request = httpMocks.createRequest({
+      method: 'GET',
+      url: '/tweets',
+      headers: {Authorization: `Bearer ${token}`},
+    });
+    const response = httpMocks.createResponse();
+    const next = jest.fn();
+    jwt.verify = jest.fn((token, secret, callback) => {
+      callback(undefined, {id: userId});
+    });
+    userRepository.findById = jest.fn((id) => Promise.resolve({id}));
+
+    await isAuth(request, response, next);
+
+    expect(request).toMatchObject({userId, token});
+    expect(next).toHaveBeenCalledTimes(1);
+  });
 });
